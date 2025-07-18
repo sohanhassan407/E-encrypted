@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Emoji Messenger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- Global Styles & Claymorphism UI Variables --- */
+        :root {
+            --font-family: 'Poppins', sans-serif;
+            --transition-speed: 0.35s;
+            --border-radius: 20px;
+            --border-radius-large: 25px;
+            
+            /* Light Theme (Claymorphism Style) */
+            --light-bg: #f4f7fa;
+            --light-text: #2d2d2d;
+            --light-text-secondary: #6b7280;
+            --light-primary: #6B46C1;
+            --light-primary-gradient: linear-gradient(145deg, #805AD5, #553C9A);
+            --light-shadow-outset: 4px 4px 10px rgba(0, 0, 0, 0.1), -4px -4px 10px rgba(255, 255, 255, 0.9);
+            --light-shadow-inset: inset 4px 4px 8px rgba(0, 0, 0, 0.08), inset -4px -4px 8px rgba(255, 255, 255, 0.9);
+            
+            /* Dark Theme (Adapted Claymorphism) */
+            --dark-bg: #1f2529;
+            --dark-text: #e5e7eb;
+            --dark-text-secondary: #9ca3af;
+            --dark-primary: #805AD5;
+            --dark-primary-gradient: linear-gradient(145deg, #9F7AEA, #6B46C1);
+            --dark-shadow-outset: 4px 4px 10px rgba(0, 0, 0, 0.3), -4px -4px 10px rgba(255, 255, 255, 0.05);
+            --dark-shadow-inset: inset 4px 4px 8px rgba(0, 0, 0, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="light"] {
+            --bg-color: var(--light-bg);
+            --text-color: var(--light-text);
+            --text-secondary-color: var(--light-text-secondary);
+            --primary-color: var(--light-primary);
+            --primary-gradient: var(--light-primary-gradient);
+            --shadow-outset: var(--light-shadow-outset);
+            --shadow-inset: var(--light-shadow-inset);
+            --card-bg: #ffffff;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: var(--dark-bg);
+            --text-color: var(--dark-text);
+            --text-secondary-color: var(--dark-text-secondary);
+            --primary-color: var(--dark-primary);
+            --primary-gradient: var(--dark-primary-gradient);
+            --shadow-outset: var(--dark-shadow-outset);
+            --shadow-inset: var(--dark-shadow-inset);
+            --card-bg: #2d3748;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 16px; }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            width: 100vw;
+            overflow-x: hidden;
+            transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+        }
+
+        /* --- App Container --- */
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 1rem;
+            overflow-y: auto;
+        }
+        @media (min-width: 480px) {
+            .app-container {
+                height: auto;
+                min-height: 90vh;
+                max-height: 95vh;
+                border-radius: var(--border-radius-large);
+                box-shadow: var(--shadow-outset);
+            }
+        }
+        .app-container::-webkit-scrollbar { display: none; }
+        .app-container { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* --- Header & Hamburger --- */
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding: 0 0.5rem; }
+        .app-title { font-size: 1.8rem; font-weight: 700; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hamburger-button { background: var(--card-bg); border: none; cursor: pointer; width: 50px; height: 50px; border-radius: 50%; box-shadow: var(--shadow-outset); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; transition: all var(--transition-speed) ease; }
+        .hamburger-button:active { box-shadow: var(--shadow-inset); transform: scale(0.95); }
+        .hamburger-button span { width: 24px; height: 3px; background-color: var(--text-secondary-color); border-radius: 3px; transition: all var(--transition-speed) ease; }
+
+        /* --- Side Menu --- */
+        .side-menu { position: fixed; top: 0; right: -300px; width: 280px; height: 100%; z-index: 1001; padding: 2rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; transition: right var(--transition-speed) cubic-bezier(0.68, -0.55, 0.27, 1.55); background: var(--bg-color); box-shadow: var(--shadow-outset); }
+        .side-menu.open { right: 0; }
+        .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; opacity: 0; visibility: hidden; transition: opacity var(--transition-speed) ease; }
+        .menu-overlay.open { opacity: 1; visibility: visible; }
+        .menu-item, .menu-toggle { display: flex; align-items: center; gap: 1rem; color: var(--text-color); text-decoration: none; font-size: 1rem; font-weight: 500; padding: 0.8rem 1rem; cursor: pointer; border-radius: 15px; box-shadow: var(--shadow-outset); transition: all var(--transition-speed) ease; }
+        .menu-item:hover, .menu-toggle:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .menu-item:active, .menu-toggle:active { box-shadow: var(--shadow-inset); transform: translateY(0); }
+        .menu-icon { width: 24px; height: 24px; fill: var(--text-color); transition: fill var(--transition-speed) ease; }
+        .created-by { margin-top: auto; text-align: center; font-size: 0.8rem; color: var(--text-secondary-color); }
+
+        /* --- Tab Controls (Claymorphism Style) --- */
+        .tab-controls { display: flex; padding: 0.5rem; margin-bottom: 2rem; border-radius: var(--border-radius-large); box-shadow: var(--shadow-inset); }
+        .tab-button { flex: 1; padding: 1rem; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; background: transparent; color: var(--text-secondary-color); border-radius: var(--border-radius); transition: all var(--transition-speed) ease; }
+        .tab-button.active { background: var(--primary-gradient); color: white; box-shadow: var(--shadow-outset); transform: scale(1.02); }
+
+        /* --- Input Groups & Textareas --- */
+        .view { display: none; flex-direction: column; gap: 1.5rem; }
+        .view.active { display: flex; }
+        .input-group label { display: block; margin-bottom: 0.75rem; font-weight: 500; color: var(--text-secondary-color); padding-left: 1rem; }
+        .input-wrapper { position: relative; display: flex; align-items: center; background: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow-inset); }
+        textarea, .password-input { flex-grow: 1; border: none; outline: none; background: transparent; font-family: var(--font-family); color: var(--text-color); padding: 1rem 1.5rem; font-size: 1rem; resize: none; }
+        textarea::placeholder, .password-input::placeholder { color: var(--text-secondary-color); }
+        textarea { height: 120px; }
+        .input-adornment { display: flex; gap: 0.75rem; align-items: center; padding-right: 1rem; }
+        .icon-button { cursor: pointer; width: 24px; height: 24px; fill: var(--text-secondary-color); transition: all var(--transition-speed) ease; background: none; border: none; padding: 0; }
+        .icon-button:hover { fill: var(--primary-color); transform: scale(1.1); }
+        .clear-btn { display: none; }
+        .input-wrapper:not(.empty) .clear-btn { display: block; }
+        .lock-icon { width: 20px; height: 20px; margin-left: 1rem; }
+
+        /* --- Result Box with Actions --- */
+        .result-box { min-height: 120px; padding: 1rem 1.5rem; word-wrap: break-word; position: relative; background: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow-inset); display: flex; align-items: flex-start; gap: 1rem; }
+        .result-text { flex-grow: 1; overflow-y: auto; max-height: 150px; user-select: text; }
+        .result-text.empty { display: flex; justify-content: center; align-items: center; color: var(--text-secondary-color); text-align: center; width: 100%; min-height: 90px; }
+        .result-actions { display: flex; gap: 0.75rem; }
+        .action-icon-btn { width: 40px; height: 40px; border-radius: 12px; box-shadow: var(--shadow-outset); }
+        .action-icon-btn:active { box-shadow: var(--shadow-inset); }
+        .action-icon-btn svg { width: 20px; height: 20px; }
+        .share-btn { display: none; }
+        .check-icon { display: none; fill: #4caf50; }
+
+        /* --- Main Action Button --- */
+        .main-action-button { width: 100%; padding: 1.2rem; border: none; border-radius: var(--border-radius); font-size: 1.1rem; font-weight: 600; color: #fff; background: var(--primary-gradient); box-shadow: var(--shadow-outset); cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 0.5rem; transition: all var(--transition-speed) ease; }
+        .main-action-button:active { transform: scale(0.98); box-shadow: var(--shadow-inset); }
+        .main-action-button:disabled { cursor: wait; background: var(--text-secondary-color); box-shadow: none; }
+        .loader { width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; display: none; }
+        .main-action-button.processing .loader { display: block; }
+        .main-action-button.processing .button-text { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- Toast & Modal --- */
+        .toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); padding: 1rem 2rem; background: var(--primary-gradient); color: white; border-radius: var(--border-radius); font-weight: 500; z-index: 2000; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transition: bottom 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+        .toast.show { bottom: 30px; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1002; opacity: 0; visibility: hidden; transition: all var(--transition-speed) ease; }
+        .modal.open { opacity: 1; visibility: visible; }
+        .modal-content { padding: 2rem; width: 90%; max-width: 500px; transform: scale(0.9) translateY(20px); transition: all var(--transition-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275); background: var(--card-bg); border-radius: var(--border-radius-large); box-shadow: var(--shadow-outset); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .modal-title { font-size: 1.5rem; font-weight: 600; color: var(--primary-color); }
+        .modal-close { font-size: 2rem; font-weight: 300; cursor: pointer; border: none; background: none; color: var(--text-color); }
+    </style>
+</head>
+<body data-theme="light">
+
+    <div class="app-container">
+        
+        <header class="app-header">
+            <h1 class="app-title" data-lang-key="appTitle">Secret & 🔐 ↔ Massage</h1>
+            <button class="hamburger-button" id="hamburger-btn" aria-label="Open menu"><span></span><span></span><span></span></button>
+        </header>
+
+        <!-- Side Menu -->
+        <nav class="side-menu" id="side-menu">
+            <div class="menu-toggle" id="lang-switcher"><svg class="menu-icon" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"></path></svg><span data-lang-key="language">Language:</span> <strong id="lang-indicator">EN</strong></div>
+            <div class="menu-toggle" id="theme-switcher"><svg class="menu-icon" id="theme-icon" viewBox="0 0 24 24"></svg><span data-lang-key="theme">Theme</span></div>
+            <div id="about-btn" class="menu-item"><svg class="menu-icon" viewBox="0 0 24 24"><path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"></path></svg><span data-lang-key="about">About</span></div>
+            <div class="created-by"><span data-lang-key="createdBy">Created by</span><br>sohan</div>
+        </nav>
+        <div class="menu-overlay" id="menu-overlay"></div>
+
+        <main>
+            <div class="tab-controls">
+                <button class="tab-button active" data-tab="encrypt-view"><span data-lang-key="encryptTab">Encrypt Text</span></button>
+                <button class="tab-button" data-tab="decrypt-view"><span data-lang-key="decryptTab">Decrypt Emojis</span></button>
+            </div>
+
+            <!-- Encrypt View -->
+            <section id="encrypt-view" class="view active">
+                <div class="input-group">
+                    <label data-lang-key="typeMessage">1. Type a message</label>
+                    <div class="input-wrapper">
+                        <textarea id="text-to-encrypt" placeholder="Hello bro"></textarea>
+                        <div class="input-adornment">
+                            <button class="icon-button clear-btn" aria-label="Clear text"><svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" /></svg></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label data-lang-key="setPassword">2. Set a password</label>
+                    <div class="input-wrapper">
+                        <svg class="icon-button lock-icon" viewBox="0 0 24 24"><path d="M12,17A2,2 0 0,0 14,15A2,2 0 0,0 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" /></svg>
+                        <input type="password" id="encrypt-password" class="password-input" placeholder="••••">
+                        <div class="input-adornment">
+                            <button class="icon-button password-toggle" aria-label="Toggle password visibility"><svg viewBox="0 0 24 24"><path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"></path></svg></button>
+                        </div>
+                    </div>
+                </div>
+                <button id="encrypt-btn" class="main-action-button">
+                    <span class="loader"></span><span class="button-text" data-lang-key="encryptAction">Encrypt Message</span>
+                </button>
+                <div class="input-group">
+                    <label data-lang-key="copyAndSend">Copy and send to your friend</label>
+                    <div class="result-box">
+                        <span class="result-text empty" data-placeholder-key="encryptedResultPlaceholder"></span>
+                        <div class="result-actions">
+                            <button class="icon-button action-icon-btn copy-btn" aria-label="Copy emojis">
+                                <svg class="copy-icon" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg>
+                                <svg class="check-icon" viewBox="0 0 24 24"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" /></svg>
+                            </button>
+                            <button class="icon-button action-icon-btn share-btn" aria-label="Share emojis">
+                                <svg viewBox="0 0 24 24"><path d="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L16.04,7.15C16.56,7.62 17.24,7.92 18,7.92C19.66,7.92 21,6.58 21,5C21,3.42 19.66,2 18,2C16.34,2 15,3.42 15,5C15,5.24 15.04,5.47 15.09,5.7L7.96,9.85C7.44,9.38 6.76,9.08 6,9.08C4.34,9.08 3,10.42 3,12C3,13.58 4.34,15 6,15C6.76,15 7.44,14.62 7.96,14.15L15.09,18.3C15.04,18.53 15,18.76 15,19C15,20.58 16.34,22 18,22C19.66,22 21,20.58 21,19C21,17.42 19.66,16.08 18,16.08Z"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Decrypt View -->
+            <section id="decrypt-view" class="view">
+                <div class="input-group"><label data-lang-key="pasteEmojis">1. Paste encrypted emojis</label><div class="input-wrapper"><textarea id="emojis-to-decrypt" placeholder="Paste emojis..."></textarea><div class="input-adornment"><button class="icon-button clear-btn" aria-label="Clear text"><svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" /></svg></button></div></div></div>
+                <div class="input-group"><label data-lang-key="typePassword">2. Type the password</label><div class="input-wrapper"><svg class="icon-button lock-icon" viewBox="0 0 24 24"><path d="M12,17A2,2 0 0,0 14,15A2,2 0 0,0 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" /></svg><input type="password" id="decrypt-password" class="password-input" placeholder="••••"><div class="input-adornment"><button class="icon-button password-toggle" aria-label="Toggle password visibility"><svg viewBox="0 0 24 24"><path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"></path></svg></button></div></div></div>
+                <button id="decrypt-btn" class="main-action-button"><span class="loader"></span><span class="button-text" data-lang-key="decryptAction">Decrypt Emojis</span></button>
+                <div class="input-group"><label data-lang-key="decryptedMessage">Decrypted message:</label><div class="result-box"><span class="result-text empty" data-placeholder-key="decryptedResultPlaceholder"></span><div class="result-actions"><button class="icon-button action-icon-btn copy-btn" aria-label="Copy message"><svg class="copy-icon" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg class="check-icon" viewBox="0 0 24 24"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" /></svg></button><button class="icon-button action-icon-btn share-btn" aria-label="Share message"><svg viewBox="0 0 24 24"><path d="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L16.04,7.15C16.56,7.62 17.24,7.92 18,7.92C19.66,7.92 21,6.58 21,5C21,3.42 19.66,2 18,2C16.34,2 15,3.42 15,5C15,5.24 15.04,5.47 15.09,5.7L7.96,9.85C7.44,9.38 6.76,9.08 6,9.08C4.34,9.08 3,10.42 3,12C3,13.58 4.34,15 6,15C6.76,15 7.44,14.62 7.96,14.15L15.09,18.3C15.04,18.53 15,18.76 15,19C15,20.58 16.34,22 18,22C19.66,22 21,20.58 21,19C21,17.42 19.66,16.08 18,16.08Z"></path></svg></button></div></div></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <div id="about-modal" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" data-lang-key="about">About</h2><button class="modal-close" id="modal-close-btn">×</button></div><div class="modal-body"><p data-lang-key="aboutText"></p></div></div></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- TRANSLATION DATA ---
+        const langData = {
+            en: {
+                appTitle: "Secret & 🔐 ↔ Massage", encryptTab: "Encrypt Text", decryptTab: "Decrypt Emojis", typeMessage: "1. Type a message", setPassword: "2. Set a password",
+                encryptAction: "Encrypt Message", copyAndSend: "Copy and send to your friend", encryptedResultPlaceholder: "Your encrypted emojis will appear here...",
+                pasteEmojis: "1. Paste encrypted emojis", typePassword: "2. Type the password", decryptAction: "Decrypt Emojis", decryptedMessage: "Decrypted message:",
+                decryptedResultPlaceholder: "Your secret message will appear here...", language: "Language:", theme: "Theme", about: "About", createdBy: "Created by",
+                aboutText: "This is a Secret Message Converter app that transforms your text into emojis using a password, making it a fun and creative way to send hidden messages. It features a sleek modern Claymorphism design with support for both light and dark themes. The app is designed for an engaging user experience with a clean and dynamic interface. Alongside English, this app also supports the Bengali language. Created by sohan akhand",
+                toastCopied: "Copied to clipboard!", toastEncryptFirst: "Please type a message to encrypt.", toastPasswordFirst: "Please set a password.",
+                toastDecryptFirst: "Please paste emojis to decrypt.", toastWrongPassword: "Oops! Wrong password or invalid emojis.", processing: "Processing...",
+                shareTitle: "Secret Message", toastShared: "Share dialog opened!",
+            },
+            bn: {
+                appTitle: "গোপন মেসেজ 💬<>লক 🔐", encryptTab: "টেক্সট এনক্রিপ্ট করুন", decryptTab: "ইমোজি ডিক্রিপ্ট করুন", typeMessage: "১. একটি মেসেজ টাইপ করুন", setPassword: "২. একটি পাসওয়ার্ড সেট করুন",
+                encryptAction: "মেসেজ এনক্রিপ্ট করুন", copyAndSend: "কপি করুন এবং আপনার বন্ধুকে পাঠান", encryptedResultPlaceholder: "আপনার এনক্রিপ্টেড ইমোজি এখানে প্রদর্শিত হবে...",
+                pasteEmojis: "১. এনক্রিপ্টেড ইমোজি পেস্ট করুন", typePassword: "২. পাসওয়ার্ড টাইপ করুন", decryptAction: "ইমোজি ডিক্রিপ্ট করুন", decryptedMessage: "ডিক্রিপ্টেড মেসেজ:",
+                decryptedResultPlaceholder: "আপনার গোপন মেসেজ এখানে প্রদর্শিত হবে...", language: "ভাষা:", theme: "থিম", about: "অ্যাপ সম্পর্কে", createdBy: "তৈরি করেছেন",
+                aboutText: "এটি একটি গোপন মেসেজ কনভার্টার অ্যাপ যা আপনার টেক্সটকে পাসওয়ার্ড ব্যবহার করে ইমোজিতে রূপান্তরিত করে, এটি গোপন মেসেজ পাঠানোর একটি মজাদার এবং সৃজনশীল উপায়। এটি একটি আধুনিক ক্লেমোর্ফিজম ডিজাইনের সাথে তৈরি এবং লাইট ও ডার্ক থিম সমর্থন করে। অ্যাপটি একটি আকর্ষণীয় ব্যবহারকারী অভিজ্ঞতার জন্য পরিষ্কার এবং গতিশীল ইন্টারফেস নিয়ে ডিজাইন করা হয়েছে। ইংরেজির পাশাপাশি এই অ্যাপটি বাংলা ভাষাও সমর্থন করে। তৈরি করেছেন সোহান আখন্দ",
+                toastCopied: "ক্লিপবোর্ডে কপি করা হয়েছে!", toastEncryptFirst: "এনক্রিপ্ট করার জন্য একটি মেসেজ টাইপ করুন।", toastPasswordFirst: "একটি পাসওয়ার্ড সেট করুন।",
+                toastDecryptFirst: "ডিক্রিপ্ট করার জন্য ইমোজি পেস্ট করুন।", toastWrongPassword: "ওহো! ভুল পাসওয়ার্ড বা অবৈধ ইমোজি।", processing: "প্রক্রিয়াকরণ চলছে...",
+                shareTitle: "গোপন মেসেজ", toastShared: "শেয়ার ডায়ালগ খোলা হয়েছে!",
+            }
+        };
+
+        // --- DYNAMIC ENCRYPTION LOGIC ---
+        const BASE_EMOJIS = ['😀','😁','😂','😃','😄','😅','😆','😇','😈','😉','😊','😋','😌','😍','😎','😏','😐','😑','😒','😓','😔','😕','😖','😗','😘','😙','😚','😛','😜','😝','😞','😟','😠','😡','😢','😣','😤','😥','😦','😧','😨','😩','😪','😫','😬','😮','😯','😰','😱','😲','😳','😴','😵','😶','😷','😸','😹','😺','😻','😼','😽','😾','😿','🙀','💀','👽','💩','🔥','✨'];
+        const getEmojiMaps = (password) => {
+            let seed = 0;
+            for (let i = 0; i < password.length; i++) { seed = (seed << 5) - seed + password.charCodeAt(i); seed |= 0; }
+            const random = () => { var x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
+            const shuffled = [...BASE_EMOJIS].sort(() => random() - 0.5);
+            const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+            const emojiMap = {}, reverseEmojiMap = {};
+            for(let i=0; i<base64Chars.length; i++){ emojiMap[base64Chars[i]] = shuffled[i]; reverseEmojiMap[shuffled[i]] = base64Chars[i]; }
+            return { emojiMap, reverseEmojiMap };
+        };
+        const xorStrings = (i,k) => Array.from(i).map((c,j)=>String.fromCharCode(c.charCodeAt(0)^k.charCodeAt(j%k.length))).join('');
+        const encrypt = (t,p) => { try { const {emojiMap} = getEmojiMaps(p); const b64 = btoa(unescape(encodeURIComponent(xorStrings(t,p)))); return Array.from(b64).map(c=>emojiMap[c]||'').join(''); } catch(e){ console.error(e); return null; } };
+        const decrypt = (e,p) => { try { const {reverseEmojiMap} = getEmojiMaps(p); const b64 = Array.from(e).map(c=>reverseEmojiMap[c]||'').join(''); return xorStrings(decodeURIComponent(escape(atob(b64))),p); } catch(e){ console.error(e); return null; } };
+        
+        // --- UI & State ---
+        const body = document.body;
+        let currentLang = 'en';
+        
+        // --- Helper Functions ---
+        const showToast = (key) => { const t = document.getElementById('toast'); t.textContent = langData[currentLang][key]; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); };
+        const setLanguage = (lang) => {
+            currentLang = lang; document.documentElement.lang = lang; document.getElementById('lang-indicator').textContent = lang.toUpperCase();
+            document.querySelectorAll('[data-lang-key]').forEach(el => el.textContent = langData[lang][el.dataset.langKey]);
+            document.querySelectorAll('[data-placeholder-key]').forEach(el => { if(el.classList.contains('empty')) el.textContent = langData[lang][el.dataset.placeholderKey]; });
+            localStorage.setItem('app-language', lang);
+        };
+        const setTheme = (theme) => {
+            body.dataset.theme = theme; localStorage.setItem('app-theme', theme);
+            const moonIcon = '<path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.67 0-4.85-2.18-4.85-4.85 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"></path>';
+            const sunIcon = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.64 5.64c.39-.39 1.02-.39 1.41 0s.39 1.02 0 1.41L5.64 8.46c-.39.39-1.02.39-1.41 0s-.39-1.02 0-1.41L5.64 5.64zm12.72 12.72c.39-.39 1.02-.39 1.41 0s.39 1.02 0 1.41l-1.41 1.41c-.39.39-1.02.39-1.41 0-.39-.39-.39-1.02 0-1.41l1.41-1.41zM5.64 18.36l1.41-1.41c.39-.39.39-1.02 0-1.41s-1.02-.39-1.41 0L4.22 16.95c-.39.39-.39 1.02 0 1.41s1.02.39 1.41 0zm12.72-12.72l1.41-1.41c.39-.39.39-1.02 0-1.41s-1.02-.39-1.41 0L16.95 4.22c-.39.39-.39 1.02 0 1.41s1.02.39 1.41 0z"></path>';
+            document.getElementById('theme-icon').innerHTML = theme === 'light' ? moonIcon : sunIcon;
+        };
+        const handleOperation = async (button, operationFn, inputEl, passEl, outputBox) => {
+            button.disabled = true; button.classList.add('processing');
+            await new Promise(r => setTimeout(r, 50));
+            const text = inputEl.value.trim(), password = passEl.value.trim();
+            if (!text) { showToast(inputEl.id.includes('encrypt') ? 'toastEncryptFirst' : 'toastDecryptFirst'); }
+            else if (!password) { showToast('toastPasswordFirst'); }
+            else { const result = operationFn(text, password);
+                const textEl = outputBox.querySelector('.result-text');
+                if (result === null) { showToast('toastWrongPassword'); textEl.textContent = langData[currentLang][textEl.dataset.placeholderKey]; textEl.classList.add('empty'); }
+                else { textEl.textContent = result; textEl.classList.remove('empty'); }
+            }
+            button.disabled = false; button.classList.remove('processing');
+        };
+
+        // --- Event Delegation & Bindings ---
+        document.addEventListener('click', async e => {
+            const copyBtn = e.target.closest('.copy-btn');
+            const shareBtn = e.target.closest('.share-btn');
+            
+            if (copyBtn) {
+                const resultText = copyBtn.closest('.result-box').querySelector('.result-text');
+                if (!resultText.classList.contains('empty')) {
+                    navigator.clipboard.writeText(resultText.textContent).then(() => {
+                        showToast('toastCopied');
+                        const copyIcon = copyBtn.querySelector('.copy-icon');
+                        const checkIcon = copyBtn.querySelector('.check-icon');
+                        copyIcon.style.display = 'none'; checkIcon.style.display = 'block';
+                        setTimeout(() => { copyIcon.style.display = 'block'; checkIcon.style.display = 'none'; }, 1500);
+                    });
+                }
+            }
+            if (shareBtn) {
+                const resultText = shareBtn.closest('.result-box').querySelector('.result-text');
+                if (!resultText.classList.contains('empty')) {
+                    try {
+                        await navigator.share({ title: langData[currentLang].shareTitle, text: resultText.textContent });
+                        showToast('toastShared');
+                    } catch (err) { console.info("Share was cancelled or failed", err); }
+                }
+            }
+        });
+
+        document.getElementById('lang-switcher').addEventListener('click', () => setLanguage(currentLang === 'en' ? 'bn' : 'en'));
+        document.getElementById('theme-switcher').addEventListener('click', () => setTheme(body.dataset.theme === 'light' ? 'dark' : 'light'));
+        document.getElementById('hamburger-btn').addEventListener('click', () => { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('menu-overlay').classList.toggle('open'); });
+        document.getElementById('menu-overlay').addEventListener('click', () => { document.getElementById('side-menu').classList.remove('open'); document.getElementById('menu-overlay').classList.remove('open'); });
+        document.querySelectorAll('.tab-button').forEach(b => b.addEventListener('click', () => { document.querySelector('.tab-button.active').classList.remove('active'); b.classList.add('active'); document.querySelector('.view.active').classList.remove('active'); document.getElementById(b.dataset.tab).classList.add('active'); }));
+        document.getElementById('encrypt-btn').addEventListener('click', e => handleOperation(e.currentTarget, encrypt, document.getElementById('text-to-encrypt'), document.getElementById('encrypt-password'), document.querySelector('#encrypt-view .result-box')));
+        document.getElementById('decrypt-btn').addEventListener('click', e => handleOperation(e.currentTarget, decrypt, document.getElementById('emojis-to-decrypt'), document.getElementById('decrypt-password'), document.querySelector('#decrypt-view .result-box')));
+        document.querySelectorAll('.input-wrapper').forEach(w => { const i = w.querySelector('textarea, input'); i.addEventListener('input', () => w.classList.toggle('empty', i.value === '')); w.querySelector('.clear-btn')?.addEventListener('click', () => { i.value = ''; i.dispatchEvent(new Event('input')); }); });
+        document.querySelectorAll('.password-toggle').forEach(t => t.addEventListener('click', () => { const i = t.closest('.input-wrapper').querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; }));
+        const aboutModal = document.getElementById('about-modal');
+        document.getElementById('about-btn').addEventListener('click', () => aboutModal.classList.add('open'));
+        document.getElementById('modal-close-btn').addEventListener('click', () => aboutModal.classList.remove('open'));
+        aboutModal.addEventListener('click', (e) => { if (e.target === aboutModal) aboutModal.classList.remove('open'); });
+
+        // --- Initialization ---
+        setTheme(localStorage.getItem('app-theme') || 'light');
+        setLanguage(localStorage.getItem('app-language') || 'en');
+        document.querySelectorAll('.input-wrapper').forEach(w => w.classList.toggle('empty', w.querySelector('textarea, input').value === ''));
+        if (navigator.share) { document.querySelectorAll('.share-btn').forEach(btn => btn.style.display = 'flex'); }
+    });
+    </script>
+
+</body>
+</html>
